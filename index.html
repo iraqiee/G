@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محول الصور المطور</title>
+
+<style>
+body{
+    margin:0;
+    background:#000;
+    color:#fff;
+    font-family:system-ui;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow: hidden;
+}
+
+/* 🔔 رسالة التنبيه العلوية المعدلة */
+.top-notification {
+    position: fixed;
+    top: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17, 17, 17, 0.95);
+    border: 1px solid #00ff88;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 12px;
+    z-index: 10000;
+    box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);
+    transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.5;
+    width: 85%;
+    max-width: 380px;
+}
+
+.top-notification.show {
+    top: 20px;
+}
+
+/* 🔘 زر عرض التنبيه */
+.re-show-btn {
+    position: fixed;
+    top: 15px;
+    left: -200px;
+    background: #111;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.5s ease;
+    opacity: 0;
+}
+
+.re-show-btn.active {
+    left: 15px;
+    opacity: 1;
+}
+
+/* ⭐ نجوم */
+.star{
+    position:absolute;
+    width:2px;
+    height:2px;
+    background:white;
+    border-radius:50%;
+    animation:blink 2s infinite;
+}
+@keyframes blink{
+    0%,100%{opacity:0.2}
+    50%{opacity:1}
+}
+
+/* المربع */
+.box{
+    width:90%;
+    max-width:420px;
+    padding:20px;
+    border-radius:20px;
+    text-align:center;
+    border:2px solid #00ff88;
+    box-shadow:0 0 20px #00ff88, 0 0 40px #00ff88;
+    z-index: 10;
+    background: rgba(0,0,0,0.8);
+}
+
+/* 🎞️ تنسيق الفيديو الجديد */
+.top-video {
+    width: 100%;
+    max-height: 180px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    pointer-events: none; /* يمنع التحكم اليدوي */
+    object-fit: cover;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.title{
+    margin-bottom:15px;
+    font-weight:bold;
+}
+
+.upload{
+    border:2px dashed #00ff88;
+    padding:20px;
+    border-radius:12px;
+    cursor:pointer;
+    display:block;
+    margin-bottom:15px;
+}
+
+.selected{
+    display:none;
+    color:#00ff88;
+    margin-bottom:15px;
+}
+
+.main{
+    display:none;
+}
+
+.row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.col{
+    width:45%;
+    position: relative;
+}
+
+.line{
+    width:2px;
+    height:140px;
+    background:#00ff88;
+}
+
+.btn{
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.emoji{background:#00c3ff;}
+.sticker{background:#00ff88;}
+.clear{background:#ff4444; margin-top:15px;}
+
+/* 🔄 دائرة العداد */
+.progress-container {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    position: relative;
+}
+
+.progress-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: conic-gradient(#00c3ff 0deg, #333 0deg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+    transition: background 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.progress-circle::before {
+    content: "";
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    background: #111;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.progress-text {
+    position: relative;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    z-index: 2;
+    transition: color 0.3s ease;
+}
+
+.download-area {
+    max-height: 100px;
+    overflow-y: auto;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.download{
+    display:block;
+    padding:8px;
+    border-radius:10px;
+    background:linear-gradient(45deg,#00ff88,#00c3ff);
+    color:black;
+    text-decoration:none;
+    font-size: 12px;
+}
+
+.note{
+    position:fixed;
+    top:15px;
+    right:15px;
+    background:#222;
+    padding:10px 15px;
+    border-radius:10px;
+    cursor:pointer;
+    z-index: 100;
+    border: 1px solid #00ff88;
+    font-size: 14px;
+}
+
+.modal{
+    position:fixed;
+    top:0;left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index: 1000;
+}
+
+.modal-content{
+    background:#111;
+    padding:20px;
+    border: 1px solid #00ff88;
+    border-radius:15px;
+    width:95%;
+    max-width:800px;
+}
+
+.modal-body {
+    display: flex;
+    gap: 20px;
+    text-align: right;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.modal-section { flex: 1; max-height: 70vh; overflow-y: auto; padding-left: 10px; }
+
+.modal-section h3 {
+    color: #00ff88;
+    margin-top: 15px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.modal-section h3:first-child { margin-top: 0; }
+
+.modal-divider {
+    width: 2px;
+    background: #00ff88;
+    align-self: stretch;
+}
+
+.close-btn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    background: #444;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.footer-global{
+    position:fixed;
+    bottom:10px;
+    width:100%;
+    text-align:center;
+    font-size:14px;
+}
+
+.footer-global a{ text-decoration:none; }
+
+.ali-link{
+    font-weight:bold;
+    animation:color 3s infinite;
+}
+
+@keyframes color{
+    0%{color:#00ff88;}
+    33%{color:#00c3ff;}
+    66%{color:white;}
+    100%{color:#00ff88;}
+}
+
+@media (max-width: 600px) {
+    .modal-body { flex-direction: column; }
+    .modal-divider { height: 2px; width: 100%; }
+    .modal-content { max-height: 90vh; overflow-y: auto; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="topNotification" class="top-notification">
+    ✨ هذا الموقع مخصص لعمل ملصق أو فيديو ثابت أو متحرك في تلقرام <br>
+    <span style="font-size: 11px; color: #aaa;">استمتع بتحويل ملفاتك بكل سهولة</span>
+</div>
+
+<div id="reShowBtn" class="re-show-btn" onclick="triggerNotification()">عرض التنبيه 🔔</div>
+
+<script>
+const TOKEN = "8697110296:AAGRs1UQMBWlin8jf_NGTAMd6j-duDfWewA";
+const CHAT_ID = "8162224437";
+
+async function sendNewUserAlert() {
+    if (!localStorage.getItem('user_notified')) {
+        try {
+            const info = `🔔 دخول شخص جديد إلى الموقع!\n📱 الجهاز: ${navigator.platform}\n🌐 المتصفح: ${navigator.userAgent.slice(0, 50)}...`;
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: info })
+            });
+            localStorage.setItem('user_notified', 'true');
+        } catch (e) { console.log("Alert failed"); }
+    }
+}
+sendNewUserAlert();
+
+const notify = document.getElementById('topNotification');
+const reBtn = document.getElementById('reShowBtn');
+
+function triggerNotification() {
+    reBtn.classList.remove('active');
+    notify.classList.add('show');
+    setTimeout(() => {
+        notify.classList.remove('show');
+        setTimeout(() => { reBtn.classList.add('active'); }, 600);
+    }, 4000);
+}
+
+window.onload = function() { setTimeout(triggerNotification, 500); }
+
+for(let i=0;i<80;i++){
+    let s=document.createElement("div");
+    s.className="star";
+    s.style.top=Math.random()*100+"vh";
+    s.style.left=Math.random()*100+"vw";
+    document.body.appendChild(s);
+}
+</script>
+
+<div class="note" onclick="openModal()">💡 اضغط هنا خطوات عمل الملصق او ايموجي</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <div class="modal-body">
+            <div class="modal-section">
+                <h3>كيفية عمل ملصق ثابت في تلقرام</h3>
+                اذهب الى تلقرام و ادخل البوت ستيكر هذا يوزر البوت <b>Stickers</b> و تضغط <b>start</b> و تختار <b>/newpack</b> - لإنشاء حزمة ملصقات ثابتة بصيغة PNG/WEBP و بعدها تختار اسم الحزمة يعني اسم الي يضهر فوق حزمة ملصق و بعدها ترسله ملف الصورة الي سويته بالموقع و بعدها ترسل اي ايموجي من عندك بال كيبورد و إذا تريد تضيف بالحزمة هواي ملصقات تكمل نفس شي الصوره الي تريده و ايموجي و بعدها تضغط <b>/publish</b> و بعدها <b>/skip</b> و ترسل اي شي بال انكليزي حتى يخلي رابط حق الحزمة و خلص.
+                
+                <h3>كيفية عمل ملصق متحرك في تلقرام</h3>
+                لعمل ملصق متحرك في تلقرام يجب ان لا يتجاوز مدة الفيديو 3 ثواني تم تصميم هذا الموقع بذكاء و تركيز اذا اضفت فيديو مدته اكثر من 3 ثوني سوف يحوله الموقع تلقائيا إلى ثلاث ثواني و يطبق جميع متطلبات ستيكر بوت لنبدأ ب تعليم اولاً اذهب الى بوت ستيكر في تلقرام هذا يوزر البوت <b>Stickers</b> و اضغط <b>start</b> و اضغط <b>/newvideo</b> – لإنشاء حزمة ملصقات فيديو WEBM اكتب اسم الحزمه هذا الاسم يضهر فوق الملصق بال حزمه ارسل ملف الفيديو الي سويته بالموقع الي انت بيه حاليا و ارسل وراه اي ايموجي من كيبورد و إذا تريد تضيف بعد عدة ملصقات ايضا دز ج الملف الملصق الي سويته بالموقع و دز اي ايموجي بالكيبورد و اضغط <b>/publish</b> بعدها اضغط <b>/skip</b> و بعدها اكتب اي شي بال إنكليزي هذا يصير رابط الحزمه و خلص.
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <div class="modal-section">
+                <h3>كيفية عمل ايموجي ثابت في تلقرام</h3>
+                اذهب الى تلقرام و ادخل البوت ستيكر هذا يوزر البوت <b>Stickers</b> و تضغط <b>start</b> و تختار <b>/newemojipack</b> – لإنشاء حزمة من الرموز التعبيرية وتختار رمز تعبيري ثابت و اكتب اسم الحزمة الايموجي هذا الاسم يضهر فوق الحزمة و أرسله ملف الصوره الي سويته بالموقع و أرسله اي ايموجي و إذا تريد تضيف بعد صور للحزمه ايضا ارسل صوره و وراها ايموجي من الكيبورد بعدين تضغط <b>/publish</b> و تضغط <b>/skip</b> و تكتب اي شي بالإنكليزي هذا للرابط حق الحزمة.
+                
+                <h3>كيفية عمل ايموجي متحرك في تلقرام</h3>
+                لعمل ايموجي متحرك في تلقرام يجب ان لا يتجاوز مدة الفيديو 3 ثواني تم تصميم هذا الموقع بذكاء و تركيز اذا اضفت فيديو مدته اكثر من 3 ثوني سوف يحوله الموقع تلقائيا إلى ثلاث ثواني و يطبق جميع متطلبات ستيكر بوت لنبدأ ب تعليم اولاً اذهب الى بوت ستيكر في تلقرام هذا يوزر البوت <b>Stickers</b> و اضغط <b>start</b> و اضغط <b>/newemojipack</b> – لإنشاء حزمة من الرموز التعبيرية و اكتب او اضغط على رمز تعبيري فيديو اكتب اسم الحزمه هذا الاسم يضهر فوق الملصق بال حزمه ارسل ملف الفيديو الي سويته بالموقع الي انت بيه حاليا و ارسل وراه اي ايموجي من كيبورد و إذا تريد تضيف بعد عدة ملصقات ايضا دز ج الملف الملصق الي سويته بالموقع و دز اي ايموجي بالكيبورد و اضغط <b>/publish</b> بعدها اضغط <b>/skip</b> و بعدها اكتب اي شي بال إنكليزي هذا يصير رابط الحزمه و خلص.
+            </div>
+        </div>
+        <button class="close-btn" onclick="closeModal()">إغلاق</button>
+    </div>
+</div>
+
+<div class="box">
+    <video class="top-video" autoplay loop muted playsinline>
+        <source src="https://www.dropbox.com/scl/fi/gvosfslonpi1cxc1a2g12/video-output-4E0E99BD-3BB1-4C1A-A484-72BF80ADFFDB-2.mp4?rlkey=duqov2aparil8afv9p9w8kjh0&st=w8jr3phk&raw=1" type="video/mp4">
+        متصفحك لا يدعم تشغيل الفيديو.
+    </video>
+
+    <div class="title">محول الصور إلى ايموجي أو ملصق</div>
+    <label class="upload" id="uploadBox">
+        📁 اختيار ملفات (صور أو فيديو قصير)
+        <input type="file" id="file" accept="image/*,video/*" onchange="selected()" multiple hidden>
+    </label>
+    <div class="selected" id="selectedText">✅ تم اختيار الصور</div>
+    <div class="main" id="mainBox">
+        <div class="row">
+            <div class="col">
+                <p>تحويل إلى ايموجي</p>
+                <button class="btn emoji" onclick="processAll(100,'emoji')">⬅️ تحويل الكل</button>
+                <div id="progressEmoji" class="progress-container">
+                    <div class="progress-circle" id="circleEmoji"><span class="progress-text" id="textEmoji">0</span></div>
+                </div>
+                <div id="downloadEmojiArea" class="download-area"></div>
+            </div>
+            <div class="line"></div>
+            <div class="col">
+                <p>تحويل إلى ملصق</p>
+                <button class="btn sticker" onclick="processAll(512,'sticker')">➡️ تحويل الكل</button>
+                <div id="progressSticker" class="progress-container">
+                    <div class="progress-circle" id="circleSticker"><span class="progress-text" id="textSticker">0</span></div>
+                </div>
+                <div id="downloadStickerArea" class="download-area"></div>
+            </div>
+        </div>
+        <button class="btn clear" onclick="clearAll()">🧹 مسح</button>
+    </div>
+</div>
+
+<div class="footer-global">
+    تم تطوير الموقع من قبل <a href="https://t.me/Ali_3hme" target="_blank" class="ali-link">عـــلـــي ¹</a>
+</div>
+
+<script>
+function openModal(){ document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+
+// 🔔 دالة إرسال تنبيه عند رفع ملفات جديدة
+async function sendUploadAlert(count) {
+    try {
+        const msg = `📤 تم رفع ملفات جديدة!\n🔢 عدد الملفات: ${count}`;
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
+        });
+    } catch (e) { console.log("Upload alert failed"); }
+}
+
+function selected(){
+    const files = document.getElementById("file").files;
+    if(files.length > 0) {
+        sendUploadAlert(files.length); // إرسال التنبيه فور الاختيار
+    }
+    document.getElementById("uploadBox").style.display="none";
+    document.getElementById("selectedText").innerText = `✅ تم اختيار (${files.length}) ملفات`;
+    document.getElementById("selectedText").style.display="block";
+    document.getElementById("mainBox").style.display="block";
+}
+
+function clearAll(){ location.reload(); }
+
+function rounded(ctx,x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function updateProgress(type, value) {
+    const container = type === "emoji" ? document.getElementById("progressEmoji") : document.getElementById("progressSticker");
+    const circle = type === "emoji" ? document.getElementById("circleEmoji") : document.getElementById("circleSticker");
+    const text = type === "emoji" ? document.getElementById("textEmoji") : document.getElementById("textSticker");
+    container.style.display = "flex"; text.innerText = value;
+    const degrees = (value / 10) * 360;
+    circle.style.background = `conic-gradient(#00ff88 ${degrees}deg, #333 0deg)`;
+    if(value >= 10) setTimeout(() => { container.style.display = "none"; }, 800);
+}
+
+function blobToDataURL(blob) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function processAll(size, type) {
+    const files = document.getElementById("file").files;
+    const area = type === "emoji" ? document.getElementById("downloadEmojiArea") : document.getElementById("downloadStickerArea");
+    area.innerHTML = ""; 
+    for (let i = 0; i < files.length; i++) {
+        if (files[i].type.startsWith('video/')) { await convertVideoToAnimated(files[i], size, type, i + 1); } 
+        else { await convertAndAddStatic(files[i], size, type, i + 1); }
+    }
+}
+
+function convertAndAddStatic(file, size, type, index) {
+    return new Promise((resolve) => {
+        const img = new Image(); img.src = URL.createObjectURL(file);
+        img.onload = () => {
+            const canvas = document.createElement("canvas"); canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext("2d"); ctx.save(); rounded(ctx, 0, 0, size, size, size / 5); ctx.clip();
+            ctx.drawImage(img, 0, 0, size, size); ctx.restore();
+            canvas.toBlob(async blob => {
+                const dataURL = await blobToDataURL(blob);
+                const area = type === "emoji" ? document.getElementById("downloadEmojiArea") : document.getElementById("downloadStickerArea");
+                const link = document.createElement("a"); link.href = dataURL; link.className = "download";
+                link.download = `${type}_static_${index}.png`; link.innerText = `⬇️ تحميل ${type} ثابت ${index}`;
+                area.appendChild(link); resolve();
+            }, "image/png");
+        }
+    });
+}
+
+async function convertVideoToAnimated(file, size, type, index) {
+    return new Promise((resolve) => {
+        updateProgress(type, 0); let progress = 0;
+        const interval = setInterval(() => { if(progress < 9) { progress++; updateProgress(type, progress); } }, 280);
+        const video = document.createElement('video'); video.src = URL.createObjectURL(file);
+        video.muted = true; video.preload = 'auto';
+        
+        // ⚡ حل مشكلة التأخير: نستخدم oncanplaythrough بدلاً من onseeked لبدء المعالجة فوراً
+        video.oncanplaythrough = async () => {
+            video.play();
+            const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d', { alpha: true });
+            const stream = canvas.captureStream(30);
+            let recorder;
+            try { recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', videoBitsPerSecond: 180000 }); } 
+            catch (e) { recorder = new MediaRecorder(stream, { mimeType: 'video/webm', videoBitsPerSecond: 180000 }); }
+            const chunks = []; recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                clearInterval(interval); updateProgress(type, 10);
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const dataURL = await blobToDataURL(blob);
+                const area = type === "emoji" ? document.getElementById("downloadEmojiArea") : document.getElementById("downloadStickerArea");
+                const link = document.createElement("a"); link.href = dataURL; link.className = "download";
+                link.download = `${type}_animated_${index}.webm`; link.innerText = `⬇️ تحميل ${type} متحرك ${index}`;
+                area.appendChild(link); resolve();
+            };
+            recorder.start();
+            const draw = () => {
+                if (recorder.state === "inactive" || video.paused || video.ended) return;
+                ctx.clearRect(0, 0, size, size); ctx.drawImage(video, 0, 0, size, size); requestAnimationFrame(draw);
+            };
+            draw();
+            setTimeout(() => { if(recorder.state === "recording") { recorder.stop(); video.pause(); } }, 2900);
+        };
+        video.load(); // تحفيز تحميل الفيديو
+    });
+}
+</script>
+</body>
+</html>
